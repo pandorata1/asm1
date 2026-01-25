@@ -11,82 +11,91 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    
+    // $role = $_POST['role']; // User role by default
+    $role = 'user';
+
     if (!empty($username) && !empty($email) && !empty($password) && !empty($confirm_password)) {
         if ($password !== $confirm_password) {
-            $error = 'Passwords do not match.';
+            $error = 'Mật khẩu không khớp.';
         } elseif (strlen($password) < 6) {
-            $error = 'Password must be at least 6 characters long.';
+            $error = 'Mật khẩu phải có ít nhất 6 ký tự.';
         } else {
             try {
                 // Check if username or email already exists
                 $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
                 $stmt->execute([$username, $email]);
                 $existing_user = $stmt->fetch();
-                
+
                 if ($existing_user) {
-                    $error = 'Username or email already exists.';
+                    $error = 'Tên đăng nhập hoặc email đã tồn tại.';
                 } else {
                     // Hash the password
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                    
+
                     // Insert new user
-                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-                    $stmt->execute([$username, $email, $hashed_password]);
-                    
-                    $success = 'Registration successful. You can now <a href="login.php">login</a>.';
+                    // Note: Assuming 'role' column exists in users table.
+                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$username, $email, $hashed_password, $role]);
+
+                    $success = 'Đăng ký thành công. Bạn có thể <a href="login.php">đăng nhập</a> ngay bây giờ.';
                 }
             } catch (PDOException $e) {
-                $error = 'Database error occurred.';
+                // For debugging: $error = 'Lỗi cơ sở dữ liệu: ' . $e->getMessage();
+                $error = 'Đã xảy ra lỗi cơ sở dữ liệu.';
             }
         }
     } else {
-        $error = 'Please fill in all fields.';
+        $error = 'Vui lòng điền đầy đủ các trường.';
     }
 }
 
-$page_title = 'Register';
+$page_title = 'Đăng ký';
 include_once '../includes/header.php';
 ?>
 
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-center">Register</h3>
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h3 class="text-center mb-0">Đăng ký tài khoản</h3>
             </div>
             <div class="card-body">
                 <?php if (!empty($error)): ?>
                     <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
-                
+
                 <?php if (!empty($success)): ?>
                     <div class="alert alert-success"><?php echo $success; ?></div>
                 <?php else: ?>
                     <form method="POST">
                         <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>
+                            <label for="username" class="form-label">Tên đăng nhập</label>
+                            <input type="text" class="form-control" id="username" name="username"
+                                value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
+                                required>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
+                            <input type="email" class="form-control" id="email" name="email"
+                                value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>"
+                                required>
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
+                            <label for="password" class="form-label">Mật khẩu</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         <div class="mb-3">
-                            <label for="confirm_password" class="form-label">Confirm Password</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            <label for="confirm_password" class="form-label">Xác nhận mật khẩu</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                                required>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Register</button>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Đăng ký</button>
                         </div>
                     </form>
-                    
+
                     <div class="text-center mt-3">
-                        <p>Already have an account? <a href="login.php">Login here</a></p>
+                        <p>Đã có tài khoản? <a href="login.php" class="text-decoration-none">Đăng nhập tại đây</a></p>
                     </div>
                 <?php endif; ?>
             </div>
